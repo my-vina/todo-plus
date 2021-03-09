@@ -1,0 +1,95 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://maven.aliyun.com/repository/public"
+        }
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.1.14.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+    id 'java'
+}
+
+apply plugin: "java"
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+
+group = 'com.foraixh'
+version = '0.0.1'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+allprojects {
+    repositories {
+        maven {
+            url 'https://maven.aliyun.com/repository/public'
+        }
+
+        maven {
+            credentials {
+                username 'tCdw8c'
+                password 'SQDn5Wh7xp'
+            }
+            url 'https://repo.rdc.aliyun.com/repository/4689-release-kipgGl/'
+        }
+        maven {
+            credentials {
+                username 'tCdw8c'
+                password 'SQDn5Wh7xp'
+            }
+            url 'https://repo.rdc.aliyun.com/repository/4689-snapshot-GntWYM/'
+        }
+    }
+}
+
+jar {
+    enabled = true
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'com.google.guava:guava:28.2-jre'
+
+    implementation 'com.microsoft.azure:msal4j:1.8.0'
+    implementation 'com.microsoft.graph:microsoft-graph:2.4.1'
+    implementation 'org.slf4j:slf4j-nop:1.8.0-beta4'
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            //上传资源到Maven私服
+            repository(url: "https://repo.rdc.aliyun.com/repository/4689-release-kipgGl/") {
+                authentication(userName:"tCdw8c",password:"SQDn5Wh7xp")
+            }
+            pom.version ="$project.version"
+            pom.artifactId ="$project.name"
+            pom.groupId ="$project.group"
+        }
+    }
+}
+
+task cleanJars(type: Delete) {
+    delete 'build/libs/lib'
+}
+
+task copyJars(type: Copy, dependsOn: 'cleanJars') {
+    from configurations.compileClasspath
+    into 'build/libs/lib'
+}
+
+task cleanResources(type: Delete) {
+    delete 'build/libs/resources'
+}
+
+task copyResources(type: Copy, dependsOn: 'cleanResources') {
+    from 'src/main/resources'
+    into 'build/libs/resources'
+}

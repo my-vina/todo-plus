@@ -1,0 +1,7 @@
+server:
+  port: 20212
+
+todo-plus:
+  app:
+    id: 35a8142e-bfb4-4cd4-93cc-1d70c56b38aa
+    scopes: User.Read,MailboxSettings.Read,Calendars.ReadWrite,Tasks.ReadWrite
