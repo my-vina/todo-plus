@@ -2,10 +2,7 @@ package com.foraixh.todo.plus;
 
 import com.foraixh.todo.plus.configuration.GraphServiceClientFactory;
 import com.google.common.collect.Sets;
-import com.microsoft.aad.msal4j.DeviceCode;
-import com.microsoft.aad.msal4j.DeviceCodeFlowParameters;
-import com.microsoft.aad.msal4j.IAuthenticationResult;
-import com.microsoft.aad.msal4j.PublicClientApplication;
+import com.microsoft.aad.msal4j.*;
 import com.microsoft.graph.models.extensions.IGraphServiceClient;
 import com.microsoft.graph.requests.extensions.ITodoTaskListCollectionPage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +35,9 @@ public class DemoController {
     private String appId;
     @Value("${todo-plus.app.scopes}")
     private String[] scopes;
+
+    private String userName;
+    private String password;
 
     private final GraphServiceClientFactory graphServiceClientFactory = new GraphServiceClientFactory();
 
@@ -84,6 +84,9 @@ public class DemoController {
         };
 
         // Request a token, passing the requested permission scopes
+        app.acquireToken(
+                UserNamePasswordParameters.builder(scopeSet, userName, password.toCharArray()).build()
+        );
         IAuthenticationResult result = app.acquireToken(
                 DeviceCodeFlowParameters
                         .builder(scopeSet, deviceCodeConsumer)
