@@ -1,13 +1,16 @@
 package com.foraixh.todo.plus;
 
 import com.foraixh.todo.plus.configuration.GraphServiceClientFactory;
+import com.foraixh.todo.plus.response.GlobalResponse;
+import com.foraixh.todo.plus.service.TodoListService;
 import com.google.common.collect.Sets;
+import com.google.gson.JsonArray;
 import com.microsoft.aad.msal4j.*;
 import com.microsoft.graph.models.extensions.IGraphServiceClient;
 import com.microsoft.graph.requests.extensions.ITodoTaskListCollectionPage;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.microsoft.graph.models.extensions.User;
@@ -35,17 +38,27 @@ public class DemoController {
     private String appId;
     @Value("${todo-plus.app.scopes}")
     private String[] scopes;
-
+    @Value("${todo-plus.demo.userName}")
     private String userName;
+    @Value("${todo-plus.demo.password}")
     private String password;
 
     private final GraphServiceClientFactory graphServiceClientFactory = new GraphServiceClientFactory();
 
+    private final TodoListService todoListService;
+
+    public DemoController(TodoListService todoListService) {
+        this.todoListService = todoListService;
+    }
+
+    @GetMapping("/todo/list/{todoListId}")
+    public GlobalResponse<JsonArray> todoTaskList(String token, @PathVariable String todoListId) {
+        return GlobalResponse.success(todoListService.myTodoTask(token, todoListId));
+    }
+
     @GetMapping("/todo/list")
-    public void todoList(String token) {
-        IGraphServiceClient iGraphServiceClient = graphServiceClientFactory.getClient(token);
-        ITodoTaskListCollectionPage object = iGraphServiceClient.me().todo().lists().buildRequest().get();
-        System.out.println(object);
+    public GlobalResponse<JsonArray> todoList(String token) {
+        return GlobalResponse.success(todoListService.myTodoList(token));
     }
 
     @GetMapping("/welcomeMe")
@@ -84,9 +97,12 @@ public class DemoController {
         };
 
         // Request a token, passing the requested permission scopes
-        app.acquireToken(
-                UserNamePasswordParameters.builder(scopeSet, userName, password.toCharArray()).build()
-        );
+//        IAuthenticationResult result = app.acquireToken(
+//                UserNamePasswordParameters.builder(scopeSet, userName, password.toCharArray()).build()
+//        ).exceptionally(ex -> {
+//            System.out.println("Unable to authenticate - " + ex.getMessage());
+//            return null;
+//        }).join();
         IAuthenticationResult result = app.acquireToken(
                 DeviceCodeFlowParameters
                         .builder(scopeSet, deviceCodeConsumer)
