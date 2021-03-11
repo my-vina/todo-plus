@@ -72,6 +72,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void refreshToken(String refreshToken) {
+        // TODO 刷新的时候设置锁，防止使用时被刷新
         pca.acquireToken(RefreshTokenParameters.builder(Sets.newHashSet(scopes), refreshToken).build())
                 .exceptionally(e -> {
                     throw new RuntimeException("token：\"" + refreshToken + "\"刷新失败", e);
