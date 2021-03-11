@@ -16,4 +16,6 @@ public interface MicrosoftGraphConstants {
     String ACCESS_TOKEN = "accessToken";
     String REFRESH_TOKEN = "refreshToken";
     String EXPIRES_ON = "expiresOn";
+
+    String TOKEN_GET_AND_REFRESH_LOCK = "TOKEN_GET_AND_REFRESH_LOCK";
 }

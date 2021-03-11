@@ -9,14 +9,17 @@ import com.google.gson.JsonObject;
 import com.microsoft.aad.msal4j.IAuthenticationResult;
 import com.microsoft.aad.msal4j.PublicClientApplication;
 import com.microsoft.aad.msal4j.RefreshTokenParameters;
+import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -46,6 +49,23 @@ public class TokenServiceImpl implements TokenService {
         this.pca = pca;
     }
 
+
+    @Override
+    public String getTokenByUserName(String userName) {
+        RMap<String, Object> tokenMap = redissonClient.getMap(userName);
+        RLock lock = redissonClient.getLock(MicrosoftGraphConstants.TOKEN_GET_AND_REFRESH_LOCK);
+        lock.lock(5, TimeUnit.SECONDS);
+        try {
+            String token = (String) tokenMap.get(MicrosoftGraphConstants.ACCESS_TOKEN);
+            if (Objects.nonNull(token)) {
+                return token;
+            }
+            throw new RuntimeException("获取" + userName + "的token失败，请重新登陆");
+        } finally {
+            lock.unlock();
+        }
+    }
+
     @Override
     public void tokenStorageScheduleRefresh(IAuthenticationResult result) {
         JsonObject authResult = gson.fromJson(gson.toJson(result), JsonObject.class);
@@ -72,15 +92,20 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public void refreshToken(String refreshToken) {
-        // TODO 刷新的时候设置锁，防止使用时被刷新
-        pca.acquireToken(RefreshTokenParameters.builder(Sets.newHashSet(scopes), refreshToken).build())
-                .exceptionally(e -> {
-                    throw new RuntimeException("token：\"" + refreshToken + "\"刷新失败", e);
-                })
-                .thenAcceptAsync((IAuthenticationResult result) -> {
-                    log.info("开始刷新{}的token", result.account().username());
-                    this.tokenStorageScheduleRefresh(result);
-                    log.info("{}的token刷新成功", result.account().username());
-                });
+        RLock lock = redissonClient.getLock(MicrosoftGraphConstants.TOKEN_GET_AND_REFRESH_LOCK);
+        lock.lock(5, TimeUnit.SECONDS);
+        try {
+            pca.acquireToken(RefreshTokenParameters.builder(Sets.newHashSet(scopes), refreshToken).build())
+                    .exceptionally(e -> {
+                        throw new RuntimeException("token：\"" + refreshToken + "\"刷新失败", e);
+                    })
+                    .thenAcceptAsync((IAuthenticationResult result) -> {
+                        log.info("开始刷新{}的token", result.account().username());
+                        this.tokenStorageScheduleRefresh(result);
+                        log.info("{}的token刷新成功", result.account().username());
+                    });
+        } finally {
+            lock.unlock();
+        }
     }
 }

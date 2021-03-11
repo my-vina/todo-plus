@@ -10,6 +10,13 @@ import com.microsoft.aad.msal4j.IAuthenticationResult;
 
 public interface TokenService {
     /**
+     * 通过用户名从redis里获取token
+     * @param userName 用户名
+     * @return token
+     */
+    String getTokenByUserName(String userName);
+
+    /**
      * 成功登陆后，将token存储到redis，然后定时刷新缓存
      * @param result 登陆成功后认证信息
      */
