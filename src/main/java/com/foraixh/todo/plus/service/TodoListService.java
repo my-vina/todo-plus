@@ -2,6 +2,7 @@ package com.foraixh.todo.plus.service;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.microsoft.aad.msal4j.IAuthenticationResult;
 
 /**
  * @author myvina
@@ -23,4 +24,6 @@ public interface TodoListService {
      * @return todo任务列表里面的任务
      */
     JsonArray myTodoTask(String token, String todoTaskListId);
+
+    void tokenStorageScheduleRefresh(IAuthenticationResult result);
 }

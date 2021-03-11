@@ -5,8 +5,10 @@ import com.microsoft.aad.msal4j.PublicClientApplication;
 import com.microsoft.graph.logger.DefaultLogger;
 import com.microsoft.graph.logger.LoggerLevel;
 import com.microsoft.graph.requests.extensions.GraphServiceClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.net.MalformedURLException;
 import java.util.Set;
@@ -18,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @date 2021/02/23 16:33
  * @usage 访问微软api所需bean 管理
  */
+
+@Configuration
 public class MicrosoftGraphConfiguration {
     private final static String AUTHORITY = "https://login.microsoftonline.com/common/";
 
@@ -32,13 +36,21 @@ public class MicrosoftGraphConfiguration {
     }
 
     @Bean
-    public PublicClientApplication microsoftClientApplication(ExecutorService microsoftAppThreadPool) throws MalformedURLException {
+    public PublicClientApplication microsoftClientApplication(@Qualifier("microsoftAppThreadPool") ExecutorService microsoftAppThreadPool) throws MalformedURLException {
         // Build the MSAL application object with
         // app ID and authority
         return PublicClientApplication.builder(appId)
                     .authority(AUTHORITY)
                     .executorService(microsoftAppThreadPool)
                     .build();
+    }
+
+    @Bean
+    public ExecutorService redisDelayedQueueConsumerPool() {
+        return new ThreadPoolExecutor(10, 10,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(),
+                new DefaultThreadFactory("todo-plus-redis-delayed-queue-consumer-pool"));
     }
 
     @Bean

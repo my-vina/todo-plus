@@ -33,6 +33,7 @@ public class DemoController {
      *  Device code flow only supports organizational accounts
      */
     private final static String AUTHORITY = "https://login.microsoftonline.com/common/";
+//    private final static String AUTHORITY = "https://login.microsoftonline.com/organizations/";
 
     @Value("${todo-plus.app.id}")
     private String appId;
