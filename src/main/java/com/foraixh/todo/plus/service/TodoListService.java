@@ -25,5 +25,9 @@ public interface TodoListService {
      */
     JsonArray myTodoTask(String token, String todoTaskListId);
 
+    /**
+     * 成功登陆后，将token存储到redis，然后定时刷新缓存
+     * @param result 登陆成功后认证信息
+     */
     void tokenStorageScheduleRefresh(IAuthenticationResult result);
 }
