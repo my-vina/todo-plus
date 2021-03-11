@@ -1,6 +1,7 @@
 package com.foraixh.todo.plus.component;
 
 import com.foraixh.todo.plus.constant.MicrosoftGraphConstants;
+import com.foraixh.todo.plus.service.TokenService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -10,8 +11,14 @@ import org.springframework.stereotype.Service;
  */
 @Service(MicrosoftGraphConstants.TOKEN_REDIS_SCHEDULE_REFRESH_QUEUE)
 public class TokenRefreshRedisDelayedQueueListener implements RedisDelayedQueueListener<String> {
+    private final TokenService tokenService;
+
+    public TokenRefreshRedisDelayedQueueListener(TokenService tokenService) {
+        this.tokenService = tokenService;
+    }
+
     @Override
     public void accept(String s) {
-        System.out.println("token refresh " + s);
+        tokenService.refreshToken(s);
     }
 }

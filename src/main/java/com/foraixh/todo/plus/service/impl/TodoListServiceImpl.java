@@ -73,21 +73,4 @@ public class TodoListServiceImpl implements TodoListService {
 
         return jsonArray;
     }
-
-    @Override
-    public void tokenStorageScheduleRefresh(IAuthenticationResult result) {
-        JsonObject authResult = gson.fromJson(gson.toJson(result), JsonObject.class);
-
-        RMap<String, Object> tokenMap = redissonClient.getMap(result.account().username());
-        tokenMap.expire(Instant.ofEpochSecond(authResult.get(MicrosoftGraphConstants.EXPIRES_ON).getAsLong()));
-        tokenMap.put(MicrosoftGraphConstants.ACCESS_TOKEN, result.accessToken());
-        tokenMap.put(MicrosoftGraphConstants.REFRESH_TOKEN, authResult.get(MicrosoftGraphConstants.REFRESH_TOKEN).getAsString());
-
-        redisDelayedQueue.addQueue(
-                result.account().username(),
-                authResult.get(MicrosoftGraphConstants.EXPIRES_ON).getAsLong() - Instant.now().getEpochSecond() - 1000 * 10,
-                TimeUnit.SECONDS,
-                MicrosoftGraphConstants.TOKEN_REDIS_SCHEDULE_REFRESH_QUEUE
-        );
-    }
 }

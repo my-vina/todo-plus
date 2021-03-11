@@ -34,7 +34,6 @@ public class RedisDelayedQueue {
      * @param <T>      泛型
      */
     public <T> void addQueue(T t, long delay, TimeUnit timeUnit, String queueName) {
-        log.info("添加队列元素{}, delay: {}, timeUnit: {}" + queueName, delay, timeUnit);
         RBlockingQueue<T> blockingFairQueue = redissonClient.getBlockingQueue(queueName);
         RDelayedQueue<T> delayedQueue = redissonClient.getDelayedQueue(blockingFairQueue);
         delayedQueue.offer(t, delay, timeUnit);

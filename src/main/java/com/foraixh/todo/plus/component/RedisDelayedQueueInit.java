@@ -50,7 +50,6 @@ public class RedisDelayedQueueInit implements ApplicationContextAware {
                 T t = null;
                 try {
                     t = blockingFairQueue.take();
-                    log.info("监听队列线程{},获取到值:{}", queueName, t);
                     redisDelayedQueueListener.accept(t);
                 } catch (InterruptedException e) {
                     log.error("处理错误", e);

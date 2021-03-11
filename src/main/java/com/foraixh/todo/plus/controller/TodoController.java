@@ -2,6 +2,7 @@ package com.foraixh.todo.plus.controller;
 
 import com.foraixh.todo.plus.constant.MicrosoftGraphConstants;
 import com.foraixh.todo.plus.service.TodoListService;
+import com.foraixh.todo.plus.service.TokenService;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.microsoft.aad.msal4j.DeviceCodeFlowParameters;
@@ -32,13 +33,15 @@ public class TodoController {
 
     private final PublicClientApplication pca;
     private final TodoListService todoListService;
+    private final TokenService tokenService;
 
     @Value("${todo-plus.app.scopes}")
     private String[] scopes;
 
-    public TodoController(PublicClientApplication pca, TodoListService todoListService) {
+    public TodoController(PublicClientApplication pca, TodoListService todoListService, TokenService tokenService) {
         this.pca = pca;
         this.todoListService = todoListService;
+        this.tokenService = tokenService;
     }
 
     @RequestMapping("/login")
@@ -58,7 +61,7 @@ public class TodoController {
             return null;
         }).thenAcceptAsync((IAuthenticationResult result) -> {
             System.out.println(gson.toJson(result));
-            todoListService.tokenStorageScheduleRefresh(result);
+            tokenService.tokenStorageScheduleRefresh(result);
         });
     }
 }
