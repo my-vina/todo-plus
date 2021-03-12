@@ -1,26 +1,24 @@
 package com.foraixh.todo.plus.service.impl;
 
-import com.foraixh.todo.plus.component.RedisDelayedQueue;
+import com.foraixh.todo.plus.Repository.TodoTaskRepository;
 import com.foraixh.todo.plus.configuration.GraphServiceClientFactory;
-import com.foraixh.todo.plus.constant.MicrosoftGraphConstants;
 import com.foraixh.todo.plus.service.TodoListService;
+import com.foraixh.todo.plus.service.TokenService;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.microsoft.aad.msal4j.IAuthenticationResult;
 import com.microsoft.graph.models.extensions.IGraphServiceClient;
 import com.microsoft.graph.models.extensions.TodoTask;
 import com.microsoft.graph.models.extensions.TodoTaskList;
 import com.microsoft.graph.requests.extensions.ITodoTaskCollectionPage;
 import com.microsoft.graph.requests.extensions.ITodoTaskListCollectionPage;
-import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -37,40 +35,59 @@ public class TodoListServiceImpl implements TodoListService {
 
     private final Gson gson = new Gson();
 
-    private final RedissonClient redissonClient;
-    private final RedisDelayedQueue redisDelayedQueue;
+    private final TokenService tokenService;
+    private final TodoTaskRepository todoTaskRepository;
 
-    public TodoListServiceImpl(RedissonClient redissonClient, RedisDelayedQueue redisDelayedQueue) {
-        this.redissonClient = redissonClient;
-        this.redisDelayedQueue = redisDelayedQueue;
+    public TodoListServiceImpl(TokenService tokenService, TodoTaskRepository todoTaskRepository) {
+        this.tokenService = tokenService;
+        this.todoTaskRepository = todoTaskRepository;
     }
 
     @Override
-    public JsonArray myTodoList(String token) {
-        IGraphServiceClient iGraphServiceClient = graphServiceClientFactory.getClient(token);
+    public List<JsonObject> myTodoList(String userName) {
+        IGraphServiceClient iGraphServiceClient = graphServiceClientFactory.getClient(tokenService.getTokenByUserName(userName));
 
         ITodoTaskListCollectionPage todoList = iGraphServiceClient.me().todo().lists().buildRequest().get();
 
         List<TodoTaskList> todoTaskList = todoList.getCurrentPage();
 
-        JsonArray jsonArray = new JsonArray();
-        todoTaskList.forEach(data -> jsonArray.add(data.getRawObject()));
-
-        return jsonArray;
+        return todoTaskList.stream()
+                .map(TodoTaskList::getRawObject)
+                .peek(jsonObject -> jsonObject.addProperty("userName", userName))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public JsonArray myTodoTask(String token, String todoTaskListId) {
-        IGraphServiceClient iGraphServiceClient = graphServiceClientFactory.getClient(token);
+    public List<JsonObject> myTodoTask(String userName, String todoTaskListId) {
+        IGraphServiceClient iGraphServiceClient =
+                graphServiceClientFactory.getClient(tokenService.getTokenByUserName(userName));
 
         ITodoTaskCollectionPage todoTaskCollectionPage =
                 iGraphServiceClient.me().todo().lists().byId(todoTaskListId).tasks().buildRequest().get();
 
         List<TodoTask> todoTaskList = todoTaskCollectionPage.getCurrentPage();
 
-        JsonArray jsonArray = new JsonArray();
-        todoTaskList.forEach(data -> jsonArray.add(data.getRawObject()));
+        return todoTaskList.stream()
+                .map(TodoTask::getRawObject)
+                .peek(jsonObject -> jsonObject.addProperty("userName", userName))
+                .peek(jsonObject -> jsonObject.addProperty("todoTaskListId", todoTaskListId))
+                .collect(Collectors.toList());
+    }
 
-        return jsonArray;
+    public void syncTodoTaskList(String userName) {
+        // 数据库中todoTaskList数据
+        List<JsonObject> elementList = todoTaskRepository.selectAllTodoTaskList(userName);
+        Map<String, JsonObject> elementMap = elementList.stream().collect(Collectors.toMap(
+                (JsonObject element) -> element.get("userName").getAsString(),
+                element -> element
+        ));
+
+        // microsoft最新数据
+        List<JsonObject> latestList = myTodoList(userName);
+        Map<String, JsonObject> latestMap = latestList.stream().collect(Collectors.toMap(
+                (JsonObject element) -> element.get("userName").getAsString(),
+                element -> element
+        ));
+
     }
 }

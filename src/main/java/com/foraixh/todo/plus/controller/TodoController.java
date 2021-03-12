@@ -60,7 +60,6 @@ public class TodoController {
             log.error("Unable to authenticate - {}", e.getMessage(), e);
             return null;
         }).thenAcceptAsync((IAuthenticationResult result) -> {
-            System.out.println(gson.toJson(result));
             tokenService.tokenStorageScheduleRefresh(result);
         });
     }

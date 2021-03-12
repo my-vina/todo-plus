@@ -1,4 +1,4 @@
-package com.foraixh.todo.plus;
+package com.foraixh.todo.plus.configuration;
 
 import com.microsoft.graph.authentication.IAuthenticationProvider;
 import com.microsoft.graph.http.IHttpRequest;
