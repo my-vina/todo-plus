@@ -78,16 +78,29 @@ public class TodoListServiceImpl implements TodoListService {
         // 数据库中todoTaskList数据
         List<JsonObject> elementList = todoTaskRepository.selectAllTodoTaskList(userName);
         Map<String, JsonObject> elementMap = elementList.stream().collect(Collectors.toMap(
-                (JsonObject element) -> element.get("userName").getAsString(),
-                element -> element
+                (JsonObject jsonObject) -> jsonObject.get("id").getAsString(),
+                jsonObject -> jsonObject
         ));
 
         // microsoft最新数据
         List<JsonObject> latestList = myTodoList(userName);
         Map<String, JsonObject> latestMap = latestList.stream().collect(Collectors.toMap(
-                (JsonObject element) -> element.get("userName").getAsString(),
-                element -> element
+                (JsonObject jsonObject) -> jsonObject.get("id").getAsString(),
+                jsonObject -> jsonObject
         ));
 
+        List<JsonObject> needToInsertList = latestList.stream()
+                .filter(jsonObject -> !elementMap.containsKey(jsonObject.get("id").getAsString()))
+                .collect(Collectors.toList());
+
+        List<String> needToDeleteList = elementList.stream()
+                .map((JsonObject jsonObject) -> jsonObject.get("id").getAsString())
+                .filter(id -> !latestMap.containsKey(id))
+                .collect(Collectors.toList());
+
+        // 需要覆盖的todoTaskList
+        List<JsonObject> needToSaveList = latestList.stream()
+                .filter(jsonObject -> elementMap.containsKey(jsonObject.get("id").getAsString()))
+                .collect(Collectors.toList());
     }
 }
