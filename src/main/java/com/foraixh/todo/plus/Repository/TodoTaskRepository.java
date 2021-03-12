@@ -31,14 +31,16 @@ public class TodoTaskRepository {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public int insert(JsonArray jsonArray, String collectionName) {
-        List<JsonElement> list = new LinkedList<>();
-        jsonArray.forEach(list::add);
+    public int insert(List<JsonObject> list, String collectionName) {
         return mongoTemplate.insert(list, collectionName).size();
     }
 
     public List<JsonObject> selectAllTodoTaskList(String userName) {
         return mongoTemplate.find(Query.query(Criteria.where("userName").is(userName)), JsonObject.class,
                 TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
+    }
+
+    public long delete(List<String> idList, String collectionName) {
+        return mongoTemplate.remove(Query.query(Criteria.where("id").in(idList)), collectionName).getDeletedCount();
     }
 }
