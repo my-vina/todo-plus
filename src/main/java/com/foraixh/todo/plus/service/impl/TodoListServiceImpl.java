@@ -2,11 +2,10 @@ package com.foraixh.todo.plus.service.impl;
 
 import com.foraixh.todo.plus.Repository.TodoTaskRepository;
 import com.foraixh.todo.plus.configuration.GraphServiceClientFactory;
+import com.foraixh.todo.plus.constant.TodoTaskTableConstants;
 import com.foraixh.todo.plus.service.TodoListService;
 import com.foraixh.todo.plus.service.TokenService;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.microsoft.graph.models.extensions.IGraphServiceClient;
 import com.microsoft.graph.models.extensions.TodoTask;
@@ -15,7 +14,9 @@ import com.microsoft.graph.requests.extensions.ITodoTaskCollectionPage;
 import com.microsoft.graph.requests.extensions.ITodoTaskListCollectionPage;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -74,15 +75,21 @@ public class TodoListServiceImpl implements TodoListService {
                 .collect(Collectors.toList());
     }
 
-    public void syncTodoTaskList(String userName) {
+    /**
+     * 同步${userName}的todo任务列表和对应的任务
+     * 物理删除，不使用逻辑删除
+     * @param userName userName
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void syncTodo(String userName) {
         // 数据库中todoTaskList数据
-        List<JsonObject> elementList = todoTaskRepository.selectAllTodoTaskList(userName);
+        List<JsonObject> elementList = todoTaskRepository.selectAllTodoTaskListUserName(userName);
         Map<String, JsonObject> elementMap = elementList.stream().collect(Collectors.toMap(
                 (JsonObject jsonObject) -> jsonObject.get("id").getAsString(),
                 jsonObject -> jsonObject
         ));
 
-        // microsoft最新数据
+        // microsoft todo最新数据
         List<JsonObject> latestList = myTodoList(userName);
         Map<String, JsonObject> latestMap = latestList.stream().collect(Collectors.toMap(
                 (JsonObject jsonObject) -> jsonObject.get("id").getAsString(),
@@ -92,15 +99,43 @@ public class TodoListServiceImpl implements TodoListService {
         List<JsonObject> needToInsertList = latestList.stream()
                 .filter(jsonObject -> !elementMap.containsKey(jsonObject.get("id").getAsString()))
                 .collect(Collectors.toList());
+        insertTodoTaskListAndTodoTask(userName, needToInsertList);
 
         List<String> needToDeleteList = elementList.stream()
                 .map((JsonObject jsonObject) -> jsonObject.get("id").getAsString())
                 .filter(id -> !latestMap.containsKey(id))
                 .collect(Collectors.toList());
+        deleteTodoTaskListAndTodoTask(userName, needToDeleteList);
 
         // 需要覆盖的todoTaskList
-        List<JsonObject> needToSaveList = latestList.stream()
+        List<JsonObject> needToReplaceList = latestList.stream()
                 .filter(jsonObject -> elementMap.containsKey(jsonObject.get("id").getAsString()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 插入todoTaskList的列表和todoTaskList列表下的任务
+     * @param userName userName
+     * @param jsonObjectList todoTaskList的列表
+     */
+    public void insertTodoTaskListAndTodoTask(String userName, List<JsonObject> jsonObjectList) {
+        List<JsonObject> todoTasks = new LinkedList<>();
+
+        for (JsonObject jsonObject : jsonObjectList) {
+            todoTasks.addAll(myTodoTask(userName, jsonObject.get("id").getAsString()));
+        }
+
+        todoTaskRepository.insert(jsonObjectList, TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
+        todoTaskRepository.insert(todoTasks, TodoTaskTableConstants.TODO_TASK_TABLE);
+    }
+
+    /**
+     * 删除todoTaskList的列表和todoTaskList列表下的任务
+     * @param userName userName
+     * @param idList todoTaskList的id的列表
+     */
+    public void deleteTodoTaskListAndTodoTask(String userName, List<String> idList) {
+        todoTaskRepository.deleteById(idList, TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
+        todoTaskRepository.deleteByTodoTaskListId(idList, TodoTaskTableConstants.TODO_TASK_TABLE);
     }
 }

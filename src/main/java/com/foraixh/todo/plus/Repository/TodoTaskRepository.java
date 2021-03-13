@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -35,12 +36,33 @@ public class TodoTaskRepository {
         return mongoTemplate.insert(list, collectionName).size();
     }
 
-    public List<JsonObject> selectAllTodoTaskList(String userName) {
+    public long deleteByUserName(String userName, String collectionName) {
+        return mongoTemplate.remove(Query.query(Criteria.where("userName").in(userName)), collectionName).getDeletedCount();
+    }
+
+    public long deleteById(List<String> idList, String collectionName) {
+        return mongoTemplate.remove(Query.query(Criteria.where("id").in(idList)), collectionName).getDeletedCount();
+    }
+
+    public long deleteByTodoTaskListId(List<String> idList, String collectionName) {
+        return mongoTemplate.remove(Query.query(Criteria.where("todoTaskListId").in(idList)), collectionName).getDeletedCount();
+    }
+
+    public List<JsonObject> selectAllTodoTaskListUserName(String userName) {
         return mongoTemplate.find(Query.query(Criteria.where("userName").is(userName)), JsonObject.class,
                 TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
     }
+    public void syncTodoTaskList(String userName, List<JsonObject> latestList) {
+        long size;
 
-    public long delete(List<String> idList, String collectionName) {
-        return mongoTemplate.remove(Query.query(Criteria.where("id").in(idList)), collectionName).getDeletedCount();
+        // 删除数据库中todoTaskList数据
+        size = deleteByUserName(userName, TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
+        log.info("删除{}条记录", size);
+
+        // 插入microsoft最新数据
+        if ((size = insert(latestList, TodoTaskTableConstants.TODO_TASK_LIST_TABLE)) != latestList.size()) {
+            throw new RuntimeException("插入的todoTaskList数量不一致；插入数量为: " + size);
+        }
+        log.info("插入{}条记录", size);
     }
 }
