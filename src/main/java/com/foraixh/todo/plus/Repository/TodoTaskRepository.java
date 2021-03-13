@@ -48,21 +48,41 @@ public class TodoTaskRepository {
         return mongoTemplate.remove(Query.query(Criteria.where("todoTaskListId").in(idList)), collectionName).getDeletedCount();
     }
 
-    public List<JsonObject> selectAllTodoTaskListUserName(String userName) {
+    public List<JsonObject> selectAllTodoTaskListByUserName(String userName) {
         return mongoTemplate.find(Query.query(Criteria.where("userName").is(userName)), JsonObject.class,
                 TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
     }
+
+    public List<JsonObject> selectAllTodoTaskByUserNameAndTodoTaskListId(String userName, String todoTaskListId) {
+        return mongoTemplate.find(Query.query(Criteria.where("userName").is(userName).and("todoTaskListId").is(todoTaskListId)),
+                JsonObject.class, TodoTaskTableConstants.TODO_TASK_TABLE);
+    }
+
     public void syncTodoTaskList(String userName, List<JsonObject> latestList) {
         long size;
 
         // 删除数据库中todoTaskList数据
         size = deleteByUserName(userName, TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
-        log.info("删除{}条记录", size);
+        log.info("删除{}条todoTaskList记录", size);
 
         // 插入microsoft最新数据
         if ((size = insert(latestList, TodoTaskTableConstants.TODO_TASK_LIST_TABLE)) != latestList.size()) {
             throw new RuntimeException("插入的todoTaskList数量不一致；插入数量为: " + size);
         }
-        log.info("插入{}条记录", size);
+        log.info("插入{}条todoTaskList记录", size);
+    }
+
+    public void syncTodoTask(String userName, List<JsonObject> latestList) {
+        long size;
+
+        // 删除数据库中todoTaskList数据
+        size = deleteByUserName(userName, TodoTaskTableConstants.TODO_TASK_TABLE);
+        log.info("删除{}条todoTask记录", size);
+
+        // 插入microsoft最新数据
+        if ((size = insert(latestList, TodoTaskTableConstants.TODO_TASK_TABLE)) != latestList.size()) {
+            throw new RuntimeException("插入的todoTask数量不一致；插入数量为: " + size);
+        }
+        log.info("插入{}条todoTask记录", size);
     }
 }

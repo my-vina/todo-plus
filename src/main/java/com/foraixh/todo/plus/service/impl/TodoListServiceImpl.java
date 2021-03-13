@@ -1,6 +1,8 @@
 package com.foraixh.todo.plus.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.foraixh.todo.plus.Repository.TodoTaskRepository;
+import com.foraixh.todo.plus.annotation.UserLock;
 import com.foraixh.todo.plus.configuration.GraphServiceClientFactory;
 import com.foraixh.todo.plus.constant.TodoTaskTableConstants;
 import com.foraixh.todo.plus.service.TodoListService;
@@ -54,6 +56,7 @@ public class TodoListServiceImpl implements TodoListService {
 
         return todoTaskList.stream()
                 .map(TodoTaskList::getRawObject)
+                .peek(jsonObject -> jsonObject.remove("@odata.etag"))
                 .peek(jsonObject -> jsonObject.addProperty("userName", userName))
                 .collect(Collectors.toList());
     }
@@ -70,9 +73,24 @@ public class TodoListServiceImpl implements TodoListService {
 
         return todoTaskList.stream()
                 .map(TodoTask::getRawObject)
+                .peek(jsonObject -> jsonObject.remove("@odata.etag"))
                 .peek(jsonObject -> jsonObject.addProperty("userName", userName))
                 .peek(jsonObject -> jsonObject.addProperty("todoTaskListId", todoTaskListId))
                 .collect(Collectors.toList());
+    }
+
+//    @Transactional(rollbackFor = Exception.class)
+    @UserLock
+    @Override
+    public void simpleSyncTodo(String userName) {
+        List<JsonObject> todoTaskLists = myTodoList(userName);
+        List<JsonObject> todoTasks = new LinkedList<>();
+        todoTaskLists.forEach(item -> todoTasks.addAll(myTodoTask(userName, item.get("id").getAsString())));
+
+        todoTaskRepository.syncTodoTaskList(userName, todoTaskLists);
+        todoTaskRepository.syncTodoTask(userName, todoTasks);
+
+        log.info("成功同步{}的todoTask；任务列表{}个；任务{}个", userName, todoTaskLists.size(), todoTasks.size());
     }
 
     /**
@@ -81,9 +99,11 @@ public class TodoListServiceImpl implements TodoListService {
      * @param userName userName
      */
     @Transactional(rollbackFor = Exception.class)
+    @UserLock(paramIndex = 0)
+    @Deprecated
     public void syncTodo(String userName) {
         // 数据库中todoTaskList数据
-        List<JsonObject> elementList = todoTaskRepository.selectAllTodoTaskListUserName(userName);
+        List<JsonObject> elementList = todoTaskRepository.selectAllTodoTaskListByUserName(userName);
         Map<String, JsonObject> elementMap = elementList.stream().collect(Collectors.toMap(
                 (JsonObject jsonObject) -> jsonObject.get("id").getAsString(),
                 jsonObject -> jsonObject
@@ -111,6 +131,40 @@ public class TodoListServiceImpl implements TodoListService {
         List<JsonObject> needToReplaceList = latestList.stream()
                 .filter(jsonObject -> elementMap.containsKey(jsonObject.get("id").getAsString()))
                 .collect(Collectors.toList());
+        replaceTodoTaskListAndTodoTask(userName, needToReplaceList);
+    }
+
+    /**
+     * 更新todoTaskList的列表和todoTaskList列表下的任务
+     * @param userName userName
+     * @param jsonObjectList todoTaskList的列表
+     */
+    @Deprecated
+    private void replaceTodoTaskListAndTodoTask(String userName, List<JsonObject> jsonObjectList) {
+        List<String> idList = jsonObjectList.stream()
+                .map((JsonObject jsonObject) -> jsonObject.get("id").getAsString())
+                .collect(Collectors.toList());
+
+        todoTaskRepository.deleteById(idList, TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
+        todoTaskRepository.insert(jsonObjectList, TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
+
+        for (JsonObject todoTaskList : jsonObjectList) {
+            String todoTaskListId = todoTaskList.get("todoTaskListId").getAsString();
+            // 数据库中todoTask数据
+            List<JsonObject> elementList =
+                    todoTaskRepository.selectAllTodoTaskByUserNameAndTodoTaskListId(userName, todoTaskListId);
+            Map<String, JsonObject> elementMap = elementList.stream().collect(Collectors.toMap(
+                    (JsonObject jsonObject) -> jsonObject.get("id").getAsString(),
+                    jsonObject -> jsonObject
+            ));
+
+            // microsoft todo最新数据
+            List<JsonObject> latestList = myTodoTask(userName, todoTaskListId);
+            Map<String, JsonObject> latestMap = latestList.stream().collect(Collectors.toMap(
+                    (JsonObject jsonObject) -> jsonObject.get("id").getAsString(),
+                    jsonObject -> jsonObject
+            ));
+        }
     }
 
     /**
@@ -118,7 +172,8 @@ public class TodoListServiceImpl implements TodoListService {
      * @param userName userName
      * @param jsonObjectList todoTaskList的列表
      */
-    public void insertTodoTaskListAndTodoTask(String userName, List<JsonObject> jsonObjectList) {
+    @Deprecated
+    private void insertTodoTaskListAndTodoTask(String userName, List<JsonObject> jsonObjectList) {
         List<JsonObject> todoTasks = new LinkedList<>();
 
         for (JsonObject jsonObject : jsonObjectList) {
@@ -134,7 +189,8 @@ public class TodoListServiceImpl implements TodoListService {
      * @param userName userName
      * @param idList todoTaskList的id的列表
      */
-    public void deleteTodoTaskListAndTodoTask(String userName, List<String> idList) {
+    @Deprecated
+    private void deleteTodoTaskListAndTodoTask(String userName, List<String> idList) {
         todoTaskRepository.deleteById(idList, TodoTaskTableConstants.TODO_TASK_LIST_TABLE);
         todoTaskRepository.deleteByTodoTaskListId(idList, TodoTaskTableConstants.TODO_TASK_TABLE);
     }

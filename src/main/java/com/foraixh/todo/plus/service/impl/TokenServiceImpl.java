@@ -39,8 +39,8 @@ public class TokenServiceImpl implements TokenService {
     private final RedisDelayedQueue redisDelayedQueue;
     private final PublicClientApplication pca;
 
-    @Value("${todo-plus.app.scopes}")
-    private String[] scopes;
+//    @Value("${todo-plus.app.scopes}")
+    private String[] scopes = new String[]{"User.Read", "Tasks.ReadWrite"};
 
     public TokenServiceImpl(RedissonClient redissonClient, RedisDelayedQueue redisDelayedQueue,
                             PublicClientApplication pca) {

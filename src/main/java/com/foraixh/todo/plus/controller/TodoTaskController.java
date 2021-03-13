@@ -37,4 +37,10 @@ public class TodoTaskController {
     public GlobalResponse<List<JsonObject>> todoList(String userName) {
         return GlobalResponse.success(todoListService.myTodoList(userName));
     }
+
+    @PostMapping("/syncTodoTask")
+    public GlobalResponse<List<JsonObject>> syncTodoTask(String userName) {
+        todoListService.simpleSyncTodo(userName);
+        return GlobalResponse.success(null);
+    }
 }

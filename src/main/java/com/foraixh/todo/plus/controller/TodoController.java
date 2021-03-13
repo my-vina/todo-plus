@@ -35,8 +35,8 @@ public class TodoController {
     private final TodoListService todoListService;
     private final TokenService tokenService;
 
-    @Value("${todo-plus.app.scopes}")
-    private String[] scopes;
+//    @Value("${todo-plus.app.scopes}")
+    private String[] scopes = new String[]{"User.Read", "Tasks.ReadWrite"};
 
     public TodoController(PublicClientApplication pca, TodoListService todoListService, TokenService tokenService) {
         this.pca = pca;
@@ -61,6 +61,7 @@ public class TodoController {
             return null;
         }).thenAcceptAsync((IAuthenticationResult result) -> {
             tokenService.tokenStorageScheduleRefresh(result);
+            todoListService.simpleSyncTodo(result.account().username());
         });
     }
 }

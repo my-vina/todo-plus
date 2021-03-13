@@ -26,4 +26,10 @@ public interface TodoListService {
      * @return todo任务列表里面的任务
      */
     List<JsonObject> myTodoTask(String userName, String todoTaskListId);
+
+    /**
+     * 简单地同步用户下的todo任务列表和任务
+     * @param userName userName
+     */
+    void simpleSyncTodo(String userName);
 }
