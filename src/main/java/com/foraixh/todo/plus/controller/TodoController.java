@@ -35,8 +35,8 @@ public class TodoController {
     private final TodoListService todoListService;
     private final TokenService tokenService;
 
-//    @Value("${todo-plus.app.scopes}")
-    private String[] scopes = new String[]{"User.Read", "Tasks.ReadWrite"};
+    @Value("${todo-plus.app.scopes}")
+    private String[] scopes;
 
     public TodoController(PublicClientApplication pca, TodoListService todoListService, TokenService tokenService) {
         this.pca = pca;

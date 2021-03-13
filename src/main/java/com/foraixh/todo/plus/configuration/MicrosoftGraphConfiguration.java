@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MicrosoftGraphConfiguration {
     private final static String AUTHORITY = "https://login.microsoftonline.com/common/";
 
-//    @Value("${todo-plus.app.id}")
-    private String appId = "35a8142e-bfb4-4cd4-93cc-1d70c56b38aa";
-//    @Value("${todo-plus.app.scopes}")
-    private String[] scopes = new String[]{"User.Read", "Tasks.ReadWrite"};
+    @Value("${todo-plus.app.id}")
+    private String appId;
+    @Value("${todo-plus.app.scopes}")
+    private String[] scopes;
 
     @Bean
     public GraphServiceClientFactory graphServiceClientFactory() {
