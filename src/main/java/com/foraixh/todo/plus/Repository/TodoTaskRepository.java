@@ -1,9 +1,13 @@
 package com.foraixh.todo.plus.Repository;
 
 import com.foraixh.todo.plus.constant.TodoTaskTableConstants;
+import com.foraixh.todo.plus.pojo.TodoPlusTask;
+import com.foraixh.todo.plus.pojo.TodoPlusTaskList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.microsoft.graph.models.extensions.TodoTask;
+import com.microsoft.graph.models.extensions.TodoTaskList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.BulkOperations;
@@ -32,7 +36,7 @@ public class TodoTaskRepository {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public int insert(List<JsonObject> list, String collectionName) {
+    public<T> int insert(List<T> list, String collectionName) {
         return mongoTemplate.insert(list, collectionName).size();
     }
 
@@ -58,7 +62,7 @@ public class TodoTaskRepository {
                 JsonObject.class, TodoTaskTableConstants.TODO_TASK_TABLE);
     }
 
-    public void syncTodoTaskList(String userName, List<JsonObject> latestList) {
+    public void syncTodoTaskList(String userName, List<TodoPlusTaskList> latestList) {
         long size;
 
         // 删除数据库中todoTaskList数据
@@ -72,7 +76,7 @@ public class TodoTaskRepository {
         log.info("插入{}条todoTaskList记录", size);
     }
 
-    public void syncTodoTask(String userName, List<JsonObject> latestList) {
+    public void syncTodoTask(String userName, List<TodoPlusTask> latestList) {
         long size;
 
         // 删除数据库中todoTaskList数据

@@ -1,8 +1,12 @@
 package com.foraixh.todo.plus.service;
 
+import com.foraixh.todo.plus.pojo.TodoPlusTask;
+import com.foraixh.todo.plus.pojo.TodoPlusTaskList;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.microsoft.aad.msal4j.IAuthenticationResult;
+import com.microsoft.graph.models.extensions.TodoTask;
+import com.microsoft.graph.models.extensions.TodoTaskList;
 
 import java.util.List;
 
@@ -17,7 +21,7 @@ public interface TodoListService {
      * @param userName userName
      * @return todo任务列表
      */
-    List<JsonObject> myTodoList(String userName);
+    List<TodoPlusTaskList> myTodoList(String userName);
 
     /**
      * 我的特定todo任务列表里面的任务
@@ -25,7 +29,7 @@ public interface TodoListService {
      * @param todoTaskListId todo任务列表id
      * @return todo任务列表里面的任务
      */
-    List<JsonObject> myTodoTask(String userName, String todoTaskListId);
+    List<TodoPlusTask> myTodoTask(String userName, String todoTaskListId);
 
     /**
      * 简单地同步用户下的todo任务列表和任务
