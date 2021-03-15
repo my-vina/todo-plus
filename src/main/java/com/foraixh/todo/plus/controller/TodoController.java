@@ -1,6 +1,7 @@
 package com.foraixh.todo.plus.controller;
 
 import com.foraixh.todo.plus.constant.MicrosoftGraphConstants;
+import com.foraixh.todo.plus.service.MessageService;
 import com.foraixh.todo.plus.service.TodoListService;
 import com.foraixh.todo.plus.service.TokenService;
 import com.google.common.collect.Sets;
@@ -34,14 +35,17 @@ public class TodoController {
     private final PublicClientApplication pca;
     private final TodoListService todoListService;
     private final TokenService tokenService;
+    private final MessageService messageService;
 
     @Value("${todo-plus.app.scopes}")
     private String[] scopes;
 
-    public TodoController(PublicClientApplication pca, TodoListService todoListService, TokenService tokenService) {
+    public TodoController(PublicClientApplication pca, TodoListService todoListService, TokenService tokenService,
+                          MessageService messageService) {
         this.pca = pca;
         this.todoListService = todoListService;
         this.tokenService = tokenService;
+        this.messageService = messageService;
     }
 
     @RequestMapping("/login")
@@ -54,8 +58,7 @@ public class TodoController {
         }
 
         pca.acquireToken(DeviceCodeFlowParameters.builder(scopeSet, deviceCodeParam -> {
-            // TODO 将设备编码发到对应的邮箱
-            System.out.println(deviceCodeParam.message());
+            messageService.notify("xxx@qq.com", deviceCodeParam.message());
         }).build()).exceptionally(e -> {
             log.error("Unable to authenticate - {}", e.getMessage(), e);
             return null;
